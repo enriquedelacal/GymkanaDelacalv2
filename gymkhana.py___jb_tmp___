@@ -1,0 +1,278 @@
+# -*- coding: utf-8 -*-
+"""
+@author: Antonio Jesús Díaz Honrubia (antoniojesus.diaz@upm.es)
+@author: Gabriel Cebrián Márquez (cebriangabriel@uniovi.es)
+"""
+import os
+import glob
+import random
+import hashlib
+import sys
+import time
+
+import common
+from gcm import *
+from jose import *
+from delacal import *
+
+# from antonio_P3_ENG import *
+# from brl_P3_ENG import *
+# from gcm_P3_ENG import *
+# from jose_P3_ENG import *
+# from noelia_P3_ENG import *
+
+
+def generate_password(username):
+    return hashlib.md5(username.encode()).hexdigest()[:5]
+
+
+def register():
+    print({'EN_US':'Please enter your UO number using the following format: ' + common.TXT_FONTFACE['bold'] + common.TXT_FG_COLOR['red'] + 'UOxxxxxx' + common.TXT_END + '\n',
+           'ES_ES':'Por favor, introduce tu número UO usando el siguiente formato: ' + common.TXT_FONTFACE['bold'] + common.TXT_FG_COLOR['red'] + 'UOxxxxxx' + common.TXT_END + '\n'}[common.LANG])
+
+    username = ''
+    while username != 'exit' and not check_uo(username):
+        username = input({'EN_US':'New username: ',
+                          'ES_ES':'Nuevo usuario: '}[common.LANG]).strip().lower()
+
+        if username == '':
+            print()
+        elif username == 'exit':
+            exit(0)
+        elif not check_uo(username):
+            print({'EN_US':'ERROR: Command \'{0}\' unknown, or wrong UO format.\n',
+                   'ES_ES':'ERROR: comando \'{0}\' desconocido, o formato UO incorrecto.\n'}[common.LANG].format(username))
+        else:
+            username = username.upper()
+
+            if os.path.exists(username + '.txt'):
+                print({'EN_US':'ERROR: User \'{0}\' already exists.',
+                       'ES_ES':'ERROR: el usuario \'{0}\' ya existe.'}[common.LANG].format(username.upper()))
+                print({'EN_US':'If you have forgotten your password, please contact your teacher.\n',
+                       'ES_ES':'Si has olvidado tu contraseña, por favor, contacta con tu profesor/a.\n'}[common.LANG])
+                return None
+    print()
+
+    password = generate_password(username)
+
+    print({'EN_US':'Your access information is shown below. Please note it down in a safe place.',
+           'ES_ES':'A continuación se muestra tu información de acceso. Anótala en un lugar seguro.'}[common.LANG])
+    print({'EN_US':' * Username: ' + common.TXT_FONTFACE['bold'] + '{0}' + common.TXT_END,
+           'ES_ES':' * Usuario: ' + common.TXT_FONTFACE['bold'] + '{0}' + common.TXT_END}[common.LANG].format(username))
+    print({'EN_US':' * Password: ' + common.TXT_FONTFACE['bold'] + '{0}\n' + common.TXT_END,
+           'ES_ES':' * Contraseña: ' + common.TXT_FONTFACE['bold'] + '{0}\n' + common.TXT_END}[common.LANG].format(password))
+
+    open(username + '.txt', 'w').close()
+
+    return username
+
+
+def check_uo(username):
+    return username[:2].lower() == 'uo' and username[2:].isdigit()
+
+
+def calculate_results():
+    files = glob.glob('./UO*.txt')
+
+    for f_name in files:
+        score = 0.0
+        with open(f_name, 'r') as f:
+            for line in f.read().splitlines():
+                trials = len(line)
+                if (line[-1] == '1'):
+                    score = score + 1.0 / trials
+            if (f_name != './UO0000.txt'):
+                print(f_name[2:] + ';' + str(score))
+            else:
+                print('UO0000;' + str(score))
+
+
+def calculate_single_result(username):
+    score = 0.0
+
+    with open(username + '.txt', 'r') as f:
+        for line in f.read().splitlines():
+            trials = len(line)
+            if (line[-1] == '1'):
+                score = score + 1.0 / trials
+
+    return score
+
+
+def check_deadline():
+    deadline = time.strptime('31/12/2019 23:59', '%d/%m/%Y %H:%M')
+    current_time = time.localtime()
+
+    return time.mktime(current_time) > time.mktime(deadline)
+
+
+def clear_screen():
+    if os.name == 'nt':
+        os.system('cls')
+    else:
+        os.system('clear')
+
+
+def print_header(message):
+    line_len = 80
+    message_len = len(message)
+
+    print()
+
+    print('  ', end='')
+    for i in range(line_len - 4):
+        print('*', end='')
+    print()
+
+    print('  **', end='')
+    for i in range((line_len - 8 - message_len) // 2):
+        print(' ', end='')
+    print(message, end='')
+    for i in range((line_len - 8 - message_len) - ((line_len - 8 - message_len) // 2)):
+        print(' ', end='')
+    print('**')
+
+    print('  ', end='')
+    for i in range(line_len - 4):
+        print('*', end='')
+    print()
+
+    print()
+
+
+def main(argv):
+    common.initialize()
+    if len(argv) > 1 and argv[1] in ['EN_US', 'ES_ES']:
+        common.LANG = argv[1]
+
+    exercises = [ex1_enri]
+    #exercises = [jv_ex1, jv_ex2, jv_ex3, jv_ex4, jv_ex5, jv_ex6, jv_ex7, jv_ex8, jv_ex9, jv_ex10]
+    #exercises += [gcm_ex1, gcm_ex2, gcm_ex3, gcm_ex4, gcm_ex5, gcm_ex6, gcm_ex7]
+    # exercises = [ex1_ant, ex2_ant, ex3_ant, ex4_ant]  # iniciales
+    # exercises += [exB1, gcm_ex1, exN1, exN2]  # binario, operadores basicos, variables
+    # exercises += [jv_ex1, exN7, exN8, gcm_ex2, gcm_ex3, exB2]  # operadores logicos, condiciones, if-else
+    # exercises += [gcm_ex4, gcm_ex5, gcm_ex6, exB3, gcm_ex7, exB4]  # bucles
+    # exercises += [jv_ex3, jv_ex4, jv_ex5, jv_ex6, jv_ex7, jv_ex9, exN3, exN4, exB6, exB7]  # listas
+    # exercises += [jv_ex2, jv_ex8, jv_ex10, exN5, exN6, exB5, exB8]  # cadenas
+
+    welcome_header = {'EN_US':'PROGRAMMING GYMKHANA - Computing Basics - 2019/2020',
+                      'ES_ES':'GYMKHANA DE PROGRAMACIÓN - Fundamentos de informática - 2019/2020'}[common.LANG]
+    clear_screen()
+    print_header(welcome_header)
+
+    if (check_deadline()):
+        print({'EN_US':'Sorry, the gymkhana has already finished.\n',
+               'ES_ES':'Lo sentimos, el plazo para la gymkhana ya finalizó.\n'}[common.LANG])
+        input({'EN_US':'Press Enter to finish.',
+               'ES_ES':'Pulsa la tecla Intro para finalizar.'}[common.LANG])
+        exit(0)
+
+    print({'EN_US':'Welcome to the Programming Gymkhana of the Computing Basics subject.',
+           'ES_ES':'Bienvenido/a a la Gymkhana de Programación de Fundamentos de Informática.'}[common.LANG])
+    print({'EN_US':' * If it is your first time, type ' + common.TXT_FONTFACE['bold'] + common.TXT_FG_COLOR['red'] + 'register' + common.TXT_END + ' to create a new user.',
+           'ES_ES':' * Si es tu primera vez, escribe ' + common.TXT_FONTFACE['bold'] + common.TXT_FG_COLOR['red'] + 'register' + common.TXT_END + ' para crear un usuario nuevo.'}[common.LANG])
+    print({'EN_US':' * If you already created a user, enter your username using the format ' + common.TXT_FONTFACE['bold'] + common.TXT_FG_COLOR['red'] + 'UOxxxxxx' + common.TXT_END + '.',
+           'ES_ES':' * Si ya creaste un usuario, escríbelo usando el formato ' + common.TXT_FONTFACE['bold'] + common.TXT_FG_COLOR['red'] + 'UOxxxxxx' + common.TXT_END + '.'}[common.LANG])
+    print({'EN_US':' * To exit, type ' + common.TXT_FONTFACE['bold'] + common.TXT_FG_COLOR['red'] + 'exit' + common.TXT_END + '.\n',
+           'ES_ES':' * Para salir, escribe ' + common.TXT_FONTFACE['bold'] + common.TXT_FG_COLOR['red'] + 'exit' + common.TXT_END + '.\n'}[common.LANG])
+
+    username = ''
+    while username != 'register' and username != 'prof_results' and username != 'exit' and not check_uo(username):
+        username = input({'EN_US':'Username: ',
+                          'ES_ES':'Usuario: '}[common.LANG]).strip().lower()
+
+        if username == '':
+            print()
+        elif username == 'register':
+            print()
+            if register():
+                print({'EN_US':'Please enter your credentials to start.\n',
+                       'ES_ES':'Por favor, introduce tus nuevas credenciales para comenzar.\n'}[common.LANG])
+            username = ''
+        elif username == 'prof_results':
+            calculate_results()
+            input({'EN_US':'Press Enter to finish.\n',
+                   'ES_ES':'Pulsa la tecla Intro para finalizar.\n'}[common.LANG])
+            exit(0)
+        elif username == 'exit':
+            exit(0)
+        elif not check_uo(username):
+            print({'EN_US':'ERROR: Command \'{0}\' unknown, or wrong UO format.\n',
+                   'ES_ES':'ERROR: comando \'{0}\' desconocido, o formato UO incorrecto.\n'}[common.LANG].format(username))
+        else:
+            username = username.upper()
+            password = input({'EN_US':'Password: ',
+                              'ES_ES':'Contraseña: '}[common.LANG])
+
+            if not os.path.exists(username + '.txt') or password != generate_password(username):
+                print({'EN_US':'ERROR: Incorrect username or password.\n',
+                       'ES_ES':'ERROR: usuario o contraseña incorrectos.\n'}[common.LANG])
+                username = ''
+                time.sleep(2)
+
+    with open(username + '.txt', 'a+') as user_file:
+        current_ex = 0
+        current_tries = 0
+
+        user_file.seek(0, 0)
+        for line in user_file:
+            if len(line) > 1 and line[-2] == '1':
+                current_ex = current_ex + 1
+                current_tries = 0
+            else:
+                current_tries = len(line)
+
+        while current_ex < len(exercises):
+            exercise_header = {'EN_US':'EXERCISE {0} - Tries: {1}',
+                               'ES_ES':'EJERCICIO {0} - Intentos: {1}'}[common.LANG].format(current_ex, current_tries)
+            clear_screen()
+            print_header(exercise_header)
+            print({'EN_US': '(Type ' + common.TXT_FONTFACE['bold'] + common.TXT_FG_COLOR['red'] + 'exit' + common.TXT_END + ' to exit the program)\n',
+                   'ES_ES': '(Escribe ' + common.TXT_FONTFACE['bold'] + common.TXT_FG_COLOR['red'] + 'exit' + common.TXT_END + ' para salir del programa)\n'}[common.LANG])
+
+            random.seed((int(username[2:]) << 6) + current_ex << 4 + current_tries)
+            result = exercises[current_ex]()
+
+            if result == -2:
+                exit(0)
+            elif result == -1:
+                user_file.write('0')
+                user_file.flush()
+                current_tries = current_tries + 1
+
+                print({'EN_US':'\n' + common.TXT_FONTFACE['bold'] + common.TXT_FG_COLOR['red'] + 'Sorry, your answer is not correct.' + common.TXT_END,
+                       'ES_ES':'\n' + common.TXT_FONTFACE['bold'] + common.TXT_FG_COLOR['red'] + 'Lo sentimos, tu respuesta no es correcta.' + common.TXT_END}[common.LANG])
+                print({'EN_US':'Loading the question again in 5...',
+                       'ES_ES':'Cargando de nuevo la pregunta en 5...'}[common.LANG], end='', flush=True)
+                for i in range(4, -1, -1):
+                    time.sleep(1)
+                    print('\b\b\b\b{0}...'.format(i), end='', flush=True)
+            elif result >= 0:
+                user_file.write('1\n')
+                user_file.flush()
+                current_ex = current_ex + 1
+                current_tries = 0
+
+                print({'EN_US':'\n' + common.TXT_FONTFACE['bold'] + common.TXT_FG_COLOR['green'] + 'Correct! Well done!' + common.TXT_END,
+                       'ES_ES':'\n' + common.TXT_FONTFACE['bold'] + common.TXT_FG_COLOR['green'] + '¡Correcto! ¡Bien hecho!' + common.TXT_END}[common.LANG])
+                print({'EN_US':'Loading next question in 5...',
+                       'ES_ES':'Cargando la siguiente pregunta en 5...'}[common.LANG], end='', flush=True)
+                for i in range(4, -1, -1):
+                    time.sleep(1)
+                    print('\b\b\b\b{0}...'.format(i), end='', flush=True)
+
+        if current_ex == len(exercises):
+            clear_screen()
+            print_header(welcome_header)
+
+            print({'EN_US':'Congratulations, you have completed the Gymkhana!\n',
+                   'ES_ES':'¡Enhorabuena! ¡Has completado la Gymkhana!.\n'}[common.LANG])
+            print({'EN_US':'Your score is: ' + common.TXT_FONTFACE['bold'] + '{0}' + common.TXT_END + '\n',
+                   'ES_ES':'Tu puntuación es: ' + common.TXT_FONTFACE['bold'] + '{0}' + common.TXT_END + '\n'}[common.LANG].format(calculate_single_result(username)))
+
+            input({'EN_US':'Press Enter to finish.\n',
+                   'ES_ES':'Pulsa la tecla Intro para finalizar.\n'}[common.LANG])
+
+
+if __name__ == '__main__':
+    main(sys.argv)
